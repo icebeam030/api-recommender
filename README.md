@@ -1,2 +1,2 @@
 # api-recommendation
-A mashup-oriented API recommendation system
+A recommendation system that finds the implicit relationships between mashups and APIs
