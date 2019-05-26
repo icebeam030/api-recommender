@@ -1,2 +1,4 @@
 # vs code setings
 .vscode
+src/debug.log
+src/.ipynb_checkpoints
