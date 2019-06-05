@@ -30,7 +30,12 @@
           {% for api in apis %}
             <div class="card mb-3">
               <div class="card-body">
-                <a href="https://www.programmableweb.com/api/{{ api.url }}" class="card-title btn btn-primary">{{ api.name }}</a>
+                {% if search == "mashup" %}
+                  <a href="https://www.programmableweb.com/api/{{ api.url }}" target="_blank" class="card-title btn btn-primary">{{ api.name }}</a>
+                {% endif %}
+                {% if search == "api" %}
+                  <a href="https://www.programmableweb.com/api/{{ api.url }}" target="_blank" class="card-title btn btn-info">{{ api.name }}</a>
+                {% endif %}
                 <p class="card-text">{{ api.description }}</p>
               </div>
             </div>
