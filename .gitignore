@@ -1,4 +1,9 @@
 # vs code setings
 .vscode
+
+# jupyter notebook related
 src/debug.log
 src/.ipynb_checkpoints
+
+# FLASK cache
+src/__pycache__
