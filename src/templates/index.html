@@ -1,47 +1,52 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
 
-    <title>Web API Recommender</title>
-  </head>
+  <title>Web API Recommender</title>
+</head>
 
-  <body>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-      <div class="navbar-brand">API Recommendation - Simple yet Powerful</div>
-    </nav>
-    
-    <div class="container-fluid mt-4">
-      <form method="POST">
-        <input type="search" name="query" class="form-control mb-3" placeholder="Enter your requirements, keywords, etc." required>
-        <button type="submit" name="search" value="mashup" class="btn btn-primary mr-2">Search in Mashups</button>
-        <button type="submit" name="search" value="api" class="btn btn-info">Search in APIs</button>
-      </form>
+<body>
+  <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <div class="navbar-brand">API Recommendation - Simple yet Powerful</div>
+  </nav>
+  
+  <div class="container-fluid mt-4">
 
-      {% if apis %}
-        <div class="col-sm-8 mt-4">
-          <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-            <div class="navbar-brand">Recommended APIs</div>
-          </nav>
+    <form method="POST">
+      <input type="search" name="query" class="form-control mb-3" placeholder="Enter your requirements, keywords, etc." required>
+      <button type="submit" name="search" value="mashup" class="btn btn-primary mr-2">Search in Mashups</button>
+      <button type="submit" name="search" value="api" class="btn btn-info">Search in APIs (Not Recommended)</button>
+    </form>
 
-          {% for api in apis %}
-            <div class="card mb-3">
-              <div class="card-body">
-                {% if search == "mashup" %}
-                  <a href="https://www.programmableweb.com/api/{{ api.url }}" target="_blank" class="card-title btn btn-primary">{{ api.name }}</a>
-                {% endif %}
-                {% if search == "api" %}
-                  <a href="https://www.programmableweb.com/api/{{ api.url }}" target="_blank" class="card-title btn btn-info">{{ api.name }}</a>
-                {% endif %}
-                <p class="card-text">{{ api.description }}</p>
-              </div>
+    {% if apis %}
+      <div class="col-sm-8 mt-4">
+
+        <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+          <div class="navbar-brand">Recommended APIs</div>
+        </nav>
+
+        {% for api in apis %}
+          <div class="card mb-3">
+            <div class="card-body">
+              {% if search == "mashup" %}
+                <a href="https://www.programmableweb.com/api/{{ api.url }}" target="_blank" class="card-title btn btn-primary">{{ api.name }}</a>
+              {% endif %}
+              {% if search == "api" %}
+                <a href="https://www.programmableweb.com/api/{{ api.url }}" target="_blank" class="card-title btn btn-info">{{ api.name }}</a>
+              {% endif %}
+
+              <p class="card-text">{{ api.description }}</p>
             </div>
-          {% endfor %}
-        </div>
-      {% endif %}
-    </div>
-  </body>
+          </div>
+        {% endfor %}
+
+      </div>
+    {% endif %}
+
+  </div>
+</body>
 </html>

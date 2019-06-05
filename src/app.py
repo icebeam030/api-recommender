@@ -10,22 +10,9 @@ class APIRecommender(object):
   # read data from csv and process it
   def __init__(self):
     # read data from tables
-    self.apis_df = pd.read_csv('../datasets/apis.csv', usecols = [0, 1, 2, 3, 5])
-    self.mashups_df = pd.read_csv('../datasets/mashups.csv', usecols = [0, 1, 2, 3, 4])
+    self.apis_df = pd.read_csv('../datasets/apis_processed.csv', index_col = 0)
+    self.mashups_df = pd.read_csv('../datasets/mashups_processed.csv', index_col = 0)
 
-    # drop rows that contain null values
-    self.apis_df.dropna(inplace = True)
-    self.mashups_df.dropna(inplace = True)
-
-    # correct index numbers
-    self.apis_df.reset_index(drop = True, inplace = True)
-    self.mashups_df.reset_index(drop = True, inplace = True)
-
-    # process the description column to create new bag of words column
-    self.apis_df['description_words'] = self.apis_df['categories'] + ' ' + self.apis_df['description']
-    self.apis_df['description_words'] = self.apis_df['description_words'].apply(self.text_filter_function)
-    self.mashups_df['description_words'] = self.mashups_df['tagList'] + ' ' + self.mashups_df['description']
-    self.mashups_df['description_words'] = self.mashups_df['description_words'].apply(self.text_filter_function)
 
   # tokenize, apply filter to, and stem text
   def text_filter_function(self, text):
@@ -47,22 +34,24 @@ class APIRecommender(object):
         result += ' '
     return result
 
+
   def add_query(self, query):
     # add a new row of the query to the end of the dfs
-    mashups_df = self.mashups_df.append({ 'description_words': self.text_filter_function(query) }, ignore_index = True)
-    query_id_in_mashups_df = mashups_df.shape[0] - 1
-
     apis_df = self.apis_df.append({ 'description_words': self.text_filter_function(query) }, ignore_index = True)
-    query_id_in_apis_df = apis_df.shape[0] - 1
+    mashups_df = self.mashups_df.append({ 'description_words': self.text_filter_function(query) }, ignore_index = True)
 
     tf_idf = TfidfVectorizer(analyzer = str.split, max_df = 0.85, max_features = 5000)
 
     mashup_description_matrix = tf_idf.fit_transform(mashups_df['description_words']).toarray()
-    self.mashup_cos_sim_matrix = cosine_similarity(mashup_description_matrix, mashup_description_matrix)
-
     self.api_description_matrix = tf_idf.fit_transform(apis_df['description_words']).toarray()
 
+    self.mashup_cos_sim_matrix = cosine_similarity(mashup_description_matrix, mashup_description_matrix)
+
+    query_id_in_apis_df = apis_df.shape[0] - 1
+    query_id_in_mashups_df = mashups_df.shape[0] - 1
+
     return query_id_in_mashups_df, query_id_in_apis_df
+
 
   # return APIs with top scores in the top k related mashups of the query
   def recommend_apis_from_mashups(self, mashup_id, k = 15):
@@ -98,7 +87,11 @@ class APIRecommender(object):
       api_scores.append([all_apis[i], count[all_apis[i]]])
 
     # sort api_scores by ranking score from highest to lowest
-    api_scores = sorted(api_scores, reverse = True, key = lambda x: x[1])[:10]
+    # only recommend up to 10 APIs
+    if (len(api_scores) < 10):
+      api_scores = sorted(api_scores, reverse = True, key = lambda x: x[1])[:len(api_scores)]
+    else:
+      api_scores = sorted(api_scores, reverse = True, key = lambda x: x[1])[:10]
 
     # return a dictionary of API's name, descrition and url
     recommendations = []
@@ -108,8 +101,9 @@ class APIRecommender(object):
 
     return recommendations
 
+
   # recommend the top k related APIs to the query
-  def recommend_apis_from_apis(self, api_id, k = 15):
+  def recommend_apis_from_apis(self, api_id):
     api_scores = []
 
     # for all API entries except the last one (which is our query)
@@ -119,8 +113,11 @@ class APIRecommender(object):
       # append index and related cosine similarity score
       api_scores.append([i, cos_sim_score_i])
 
-    # sort the array descending using cosine similarity score, and pick the first k elements
-    api_scores = sorted(api_scores, reverse = True, key = lambda x: x[1])[:k]
+    # sort the array descending using cosine similarity score, and recommend up to 10 APIs
+    if (len(api_scores) < 10):
+      api_scores = sorted(api_scores, reverse = True, key = lambda x: x[1])[:len(api_scores)]
+    else:
+      api_scores = sorted(api_scores, reverse = True, key = lambda x: x[1])[:10]
 
     recommendations = []
     for i in range(len(api_scores)):
@@ -153,7 +150,7 @@ def home():
 
 
 if __name__ == "__main__":
-  print("Initialising data...")
+  print("Initialising API Recommender...")
   api_recommender = APIRecommender()
   print("Starting app...")
   app.run(debug = True)
