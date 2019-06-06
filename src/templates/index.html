@@ -1,52 +1,92 @@
 <!DOCTYPE html>
 <html>
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 
-  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
 
-  <title>Web API Recommender</title>
-</head>
+    <title>Web API Recommender</title>
+  </head>
 
-<body>
-  <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-    <div class="navbar-brand">API Recommendation - Simple yet Powerful</div>
-  </nav>
+  <body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+      <div class="navbar-brand">API Recommendation - Simple yet Powerful</div>
+    </nav>
+    
+    <div class="container-fluid mt-4">
+      <form class="col-sm-8" method="POST">
+        <div class="form-group">
+          <label for="input">Enter your requirements, keywords, etc.</label>
+          <input type="search" name="query" class="form-control" id="input" required>
+        </div>
   
-  <div class="container-fluid mt-4">
-
-    <form method="POST">
-      <input type="search" name="query" class="form-control mb-3" placeholder="Enter your requirements, keywords, etc." required>
-      <button type="submit" name="search" value="mashup" class="btn btn-primary mr-2">Search in Mashups</button>
-      <button type="submit" name="search" value="api" class="btn btn-info">Search in APIs (Not Recommended)</button>
-    </form>
-
-    {% if apis %}
-      <div class="col-sm-8 mt-4">
-
-        <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-          <div class="navbar-brand">Recommended APIs</div>
-        </nav>
-
-        {% for api in apis %}
-          <div class="card mb-3">
-            <div class="card-body">
-              {% if search == "mashup" %}
-                <a href="https://www.programmableweb.com/api/{{ api.url }}" target="_blank" class="card-title btn btn-primary">{{ api.name }}</a>
-              {% endif %}
-              {% if search == "api" %}
-                <a href="https://www.programmableweb.com/api/{{ api.url }}" target="_blank" class="card-title btn btn-info">{{ api.name }}</a>
-              {% endif %}
-
-              <p class="card-text">{{ api.description }}</p>
-            </div>
+        <div class="form-group">
+          <label for="options">Options for tf-idf (not necessary)</label>
+          <div class="form-inline" id="options">
+            <select name="max_df" class="custom-select mr-2">
+              <option selected value="0.85">Max df</option>
+              <option>0.8</option>
+              <option>0.85</option>
+              <option>0.9</option>
+              <option>0.95</option>
+              <option>1</option>
+            </select>
+  
+            <select name="max_features" class="custom-select">
+              <option selected value="5000">Max features</option>
+              <option>3000</option>
+              <option>5000</option>
+              <option>7000</option>
+              <option>10000</option>
+            </select>
           </div>
-        {% endfor %}
+        </div>
+  
+        <button type="submit" name="search" value="mashup" class="btn btn-primary mr-2">Search in Mashups</button>
+        <button type="submit" name="search" value="api" class="btn btn-secondary">Search in APIs (Not Recommended)</button>
+      </form>
 
-      </div>
-    {% endif %}
+      {% if apis %}
+        <br>
 
-  </div>
-</body>
+        <div class="col-sm-8 mt-4">
+          <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+            <div class="navbar-brand">Recommended APIs</div>
+          </nav>
+
+          {% for api in apis %}
+            <div class="card mb-3">
+              <div class="card-body">
+                {% if search == "mashup" %}
+                  <div class="row ml-auto">
+                    <a
+                      href="https://www.programmableweb.com/api/{{ api.url }}"
+                      target="_blank"
+                      class="card-title btn btn-primary"
+                    >
+                      {{ api.name }}
+                    </a>
+                    <h6 class="ml-auto mr-2">appeared in {{ api.count }} mashups</h6>
+                  </div>
+                {% endif %}
+                {% if search == "api" %}
+                  <a
+                    href="https://www.programmableweb.com/api/{{ api.url }}"
+                    target="_blank"
+                    class="card-title btn btn-secondary"
+                  >
+                    {{ api.name }}
+                  </a>
+                {% endif %}
+
+                <h6 class="card-subtitile text-muted">Categories - {{ api.categories }}</h6>
+                <p class="card-text">{{ api.description }}</p>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    </div>
+  </body>
 </html>

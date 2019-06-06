@@ -35,22 +35,26 @@ class APIRecommender(object):
     return result
 
 
-  def add_query(self, query):
+  def add_query(self, query, max_df = 0.85, max_features = 5000):
     # add a new row of the query to the end of the dfs
-    apis_df = self.apis_df.append({ 'description_words': self.text_filter_function(query) }, ignore_index = True)
-    mashups_df = self.mashups_df.append({ 'description_words': self.text_filter_function(query) }, ignore_index = True)
+    apis_df = self.apis_df.append({
+      'description_words': self.text_filter_function(query)
+    }, ignore_index = True)
+    mashups_df = self.mashups_df.append({
+      'description_words': self.text_filter_function(query)
+    }, ignore_index = True)
 
-    tf_idf = TfidfVectorizer(analyzer = str.split, max_df = 0.85, max_features = 5000)
+    tf_idf = TfidfVectorizer(analyzer = str.split, max_df = max_df, max_features = max_features)
 
     mashup_description_matrix = tf_idf.fit_transform(mashups_df['description_words']).toarray()
     self.api_description_matrix = tf_idf.fit_transform(apis_df['description_words']).toarray()
 
     self.mashup_cos_sim_matrix = cosine_similarity(mashup_description_matrix, mashup_description_matrix)
 
-    query_id_in_apis_df = apis_df.shape[0] - 1
-    query_id_in_mashups_df = mashups_df.shape[0] - 1
+    api_id = apis_df.shape[0] - 1
+    mashup_id = mashups_df.shape[0] - 1
 
-    return query_id_in_mashups_df, query_id_in_apis_df
+    return mashup_id, api_id
 
 
   # return APIs with top scores in the top k related mashups of the query
@@ -97,7 +101,13 @@ class APIRecommender(object):
     recommendations = []
     for i in range(len(api_scores)):
       api = self.apis_df.loc[self.apis_df['id'] == api_scores[i][0]].values[0]
-      recommendations.append({ 'name': api[1], 'description': api[3], 'url': api[4], 'count': api_scores[i][1] })
+      recommendations.append({
+        'name': api[1],
+        'categories': api[2],
+        'description': api[3],
+        'url': api[4],
+        'count': api_scores[i][1]
+      })
 
     return recommendations
 
@@ -124,7 +134,12 @@ class APIRecommender(object):
       # retrieve API's name from apis_df
       api = self.apis_df.loc[self.apis_df['id'] == api_scores[i][0]].values[0]
       # append a tuple of API name and its cosine similarity score
-      recommendations.append({ 'name': api[1], 'description': api[3], 'url': api[4], 'count': api_scores[i][1] })
+      recommendations.append({
+        'name': api[1],
+        'categories': api[2],
+        'description': api[3],
+        'url': api[4],
+      })
 
     return recommendations
 
@@ -135,15 +150,19 @@ app = Flask(__name__)
 @app.route("/", methods = ["GET", "POST"])
 def home():
   if request.method == "POST":
+    max_df = float(request.values.get("max_df"))
+    max_features = int(request.values.get("max_features"))
+    print(max_df, max_features)
+
     query = request.values.get("query")
-    query_id_in_mashups_df, query_id_in_apis_df = api_recommender.add_query(query)
+    mashup_id, api_id = recommender.add_query(query, max_df, max_features)
 
     if request.values.get("search") == "mashup":
-      apis = api_recommender.recommend_apis_from_mashups(query_id_in_mashups_df)
+      apis = recommender.recommend_apis_from_mashups(mashup_id)
       return render_template("index.html", apis = apis, search = "mashup")
 
     if request.values.get("search") == "api":
-      apis = api_recommender.recommend_apis_from_apis(query_id_in_apis_df)
+      apis = recommender.recommend_apis_from_apis(api_id)
       return render_template("index.html", apis = apis, search = "api")
 
   return render_template("index.html")
@@ -151,6 +170,6 @@ def home():
 
 if __name__ == "__main__":
   print("Initialising API Recommender...")
-  api_recommender = APIRecommender()
-  print("Starting app...")
+  recommender = APIRecommender()
+  print("Starting server...")
   app.run(debug = True)
