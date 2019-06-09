@@ -1,3 +1,4 @@
+# the algorithm
 import numpy as np
 import pandas as pd
 from nltk import word_tokenize
@@ -144,6 +145,7 @@ class APIRecommender(object):
     return recommendations
 
 
+# the server
 from flask import Flask, render_template, request
 app = Flask(__name__)
 
