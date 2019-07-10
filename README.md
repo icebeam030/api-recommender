@@ -1,4 +1,4 @@
-# api-recommendation
+# api-recommender
 A Python recommendation system that finds the implicit relationships between APIs and the query
 
 ## Installation
