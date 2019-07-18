@@ -16,14 +16,18 @@ from nltk import PorterStemmer
 apis_df = pd.read_csv('../datasets/apis.csv', usecols = [0, 1, 2, 3, 5])
 mashups_df = pd.read_csv('../datasets/mashups.csv', usecols = [1, 2, 3, 4, 6])
 
+# only categories column has null values, we simply fill it with a whitespace
+categories = apis_df['categories']
+categories.fillna(' ', inplace = True)
+
 # rename columns
 mashups_df.columns = ['mashup', 'api_list', 'tag_list', 'description', 'url']
 
 # we are not using tag_list in our calculation
 # so it's ok to keep those rows with null values in this column
-# we fill null values with empty string such that null values won't be dropped later
+# we fill null values with a whitespace so these rows won't be dropped later
 tag_list = mashups_df['tag_list']
-tag_list.fillna('', inplace = True)
+tag_list.fillna(' ', inplace = True)
 
 # drop other null values
 mashups_df.dropna(inplace = True)

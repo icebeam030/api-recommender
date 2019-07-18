@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 
 import nltk
-# download packages in case needed
+# download required packages
 nltk.download('stopwords')
 nltk.download('punkt')
 from nltk.corpus import stopwords
@@ -16,7 +16,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 class APIRecommender:
 
   def __init__(self):
-    # create dataframes from csv
+    # create dataframes from csv, used to retrieve relevant info
     self.apis_df = pd.read_csv('../datasets/apis_processed.csv')
     self.mashups_df = pd.read_csv('../datasets/mashups_processed.csv')
 
@@ -78,7 +78,7 @@ class APIRecommender:
     return query_index
 
 
-  # return APIs with top scores in the top k related mashups of the query
+  # return APIs with top scores in the top k similar mashups of the query
   def recommend_apis_from_mashups(self, query_index, k = 15):
     # sort the top related mashups descending using cosine similarity score
     # then pick the top k elements, skip the first mashup because it's the query itself
@@ -96,7 +96,7 @@ class APIRecommender:
 
       apis_in_top_k_mashups.append(api_list)
 
-    # filter out repeated APIs from apis_in_top_k_mashups
+    # filter out repeated API id's from apis_in_top_k_mashups
     all_apis = []
 
     for apis in apis_in_top_k_mashups:
