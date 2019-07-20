@@ -14,7 +14,6 @@ from nltk import PorterStemmer
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
-
 # create dataframes from csv
 apis_df = pd.read_csv('../datasets/apis_processed.csv')
 apis_df.fillna(' ', inplace = True)
@@ -67,7 +66,6 @@ def recommend_apis_from_mashups(query_index, k = 15):
     })
 
   return api_scores
-
 
 # initialize tf-idf vectorizer
 tf_idf = TfidfVectorizer(analyzer = str.split, max_df = 0.85, max_features = 5000)
@@ -126,4 +124,4 @@ for i in range(len(mashup_description_matrix)):
 training_df.fillna(0, inplace = True)
 
 # export csv
-training_df.to_csv('../datasets/training_sets.csv', index = False)
+training_df.to_csv('../datasets/training_data.csv', index = False)

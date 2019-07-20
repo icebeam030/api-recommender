@@ -1,4 +1,5 @@
 # the algorithm part
+
 import numpy as np
 import pandas as pd
 
@@ -22,7 +23,6 @@ class APIRecommender:
 
     # updated when query is updated, used by recommendation function
     self.mashup_cos_sim_matrix = []
-
 
   # tokenize and stem text
   def text_filter_function(self, text):
@@ -52,7 +52,6 @@ class APIRecommender:
 
     return result
 
-
   def add_query(self, query, max_df = 0.85, max_features = 5000):
     # add a new row for the query to the end of the dataframe
     # original df is not changed
@@ -76,7 +75,6 @@ class APIRecommender:
     query_index = mashups_df.shape[0] - 1
 
     return query_index
-
 
   # return APIs with top scores in the top k similar mashups of the query
   def recommend_apis_from_mashups(self, query_index, k = 15):
@@ -150,6 +148,7 @@ class APIRecommender:
 
 
 # the server part
+
 from flask import Flask, render_template, request
 app = Flask(__name__)
 
