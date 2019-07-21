@@ -1,5 +1,5 @@
-# this file cleans up raw csvs and make new csvs ready for use for the server
 # this file is for reference only, it is already executed
+# this file cleans up raw csvs and make new csvs ready for use for the server
 import numpy as np
 import pandas as pd
 

@@ -1,5 +1,5 @@
+# this file is an idea only, looks like machine learning is not suitable for this project
 # this file prepares csv for the neural network to train on
-# this file is for reference only, it is already executed
 import numpy as np
 import pandas as pd
 
