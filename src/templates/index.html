@@ -44,7 +44,6 @@
         </div>
   
         <button type="submit" name="search" value="mashup" class="btn btn-primary mr-2">Search in Mashups</button>
-        <button type="submit" name="search" value="api" class="btn btn-secondary">Search in APIs (Not Recommended)</button>
       </form>
 
       {% if apis %}
@@ -69,15 +68,6 @@
                     </a>
                     <h6 class="ml-auto mr-2">appeared in {{ api.count }} mashups</h6>
                   </div>
-                {% endif %}
-                {% if search == "api" %}
-                  <a
-                    href="https://www.programmableweb.com/api/{{ api.url }}"
-                    target="_blank"
-                    class="card-title btn btn-secondary"
-                  >
-                    {{ api.name }}
-                  </a>
                 {% endif %}
 
                 <h6 class="card-subtitile text-muted">Categories - {{ api.categories }}</h6>

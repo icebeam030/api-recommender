@@ -158,12 +158,12 @@ def home():
     max_df = float(request.values.get("max_df"))
     max_features = int(request.values.get("max_features"))
 
-    recommender = APIRecommender()
-
-    query = request.values.get("query")
-    query_index = recommender.add_query(query, max_df, max_features)
-
     if request.values.get("search") == "mashup":
+      recommender = APIRecommender()
+
+      query = request.values.get("query")
+      query_index = recommender.add_query(query, max_df, max_features)
+
       apis = recommender.recommend_apis_from_mashups(query_index)
       return render_template("index.html", apis = apis, search = "mashup")
 
