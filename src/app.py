@@ -1,10 +1,10 @@
-# the algorithm part
+# The algorithm part
 
 import numpy as np
 import pandas as pd
 
 import nltk
-# download required packages
+# Download required packages
 nltk.download('stopwords')
 nltk.download('punkt')
 from nltk.corpus import stopwords
@@ -14,162 +14,165 @@ from nltk import PorterStemmer
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
+
 class APIRecommender:
+    def __init__(self):
+        # Create dataframes from csv, used to retrieve relevant info
+        self.apis_df = pd.read_csv('../datasets/apis_processed.csv')
+        self.mashups_df = pd.read_csv('../datasets/mashups_processed.csv')
 
-  def __init__(self):
-    # create dataframes from csv, used to retrieve relevant info
-    self.apis_df = pd.read_csv('../datasets/apis_processed.csv')
-    self.mashups_df = pd.read_csv('../datasets/mashups_processed.csv')
+        # Updated when query is updated, used by recommendation function
+        self.mashup_cos_sim_matrix = []
 
-    # updated when query is updated, used by recommendation function
-    self.mashup_cos_sim_matrix = []
+    def process_text(self, text):
+        # Create a text filter list of English stopwords and special characters
+        text_filter = [stopwords.words('english')]
+        special_characters = [',', '/', '-', '.', ';']
+        for char in special_characters:
+            text_filter.append(char)
 
-  # tokenize and stem text
-  def text_filter_function(self, text):
-    # create a text filter list of English stopwords and special characters
-    text_filter = [stopwords.words('english')]
+        # Initialize text stemmer
+        porter = PorterStemmer()
 
-    special_characters = [',', '/', '-', '.', ';']
+        # String to be returned
+        result = ''
 
-    for char in special_characters:
-      text_filter.append(char)
+        # Tokenize text
+        tokens = word_tokenize(str(text))
+        for token in tokens:
+            # Remove English stopwords and special characters from each token
+            if token not in text_filter:
+                # Stem each token
+                result += porter.stem(token.lower())
+                result += ' '
 
-    # initialize text stemmer
-    porter = PorterStemmer()
+        return result
 
-    # string to be returned
-    result = ''
+    def add_query(self, query, max_df=0.85, max_features=5000):
+        # Add a new row for the query to the end of the dataframe.
+        # Original df is unchanged.
+        mashups_df = self.mashups_df.append({
+            'description_words': self.process_text(query)
+        }, ignore_index=True)
 
-    # tokenize text
-    tokens = word_tokenize(str(text))
+        # Initialize tf-idf vectorizer
+        tf_idf = TfidfVectorizer(
+            analyzer=str.split, max_df=max_df, max_features=max_features
+        )
 
-    for token in tokens:
-      # remove English stopwords and special characters in each token
-      if token not in text_filter:
-        # stem each token
-        result += porter.stem(token.lower())
-        result += ' '
+        # Apply tf-idf transformation
+        mashup_description_matrix = tf_idf.fit_transform(
+            mashups_df['description_words']
+        ).toarray()
 
-    return result
+        # Calculate cosine similarity matrix
+        self.mashup_cos_sim_matrix = cosine_similarity(
+            mashup_description_matrix,
+            mashup_description_matrix
+        )
 
-  def add_query(self, query, max_df = 0.85, max_features = 5000):
-    # add a new row for the query to the end of the dataframe
-    # original df is not changed
-    mashups_df = self.mashups_df.append({
-      'description_words': self.text_filter_function(query)
-    }, ignore_index = True)
+        # Return query's index to be passed into recommendation function
+        query_index = mashups_df.shape[0] - 1
 
-    # initialize tf-idf vectorizer
-    tf_idf = TfidfVectorizer(analyzer = str.split, max_df = max_df, max_features = max_features)
+        return query_index
 
-    # apply tf-idf transformation
-    mashup_description_matrix = tf_idf.fit_transform(mashups_df['description_words']).toarray()
+    def recommend_apis_from_mashups(self, query_index, k=15):
+        """Return APIs with top counts in top k similar mashups to the query"""
 
-    # calculate cosine similarity matrix
-    self.mashup_cos_sim_matrix = cosine_similarity(
-      mashup_description_matrix,
-      mashup_description_matrix
-    )
+        # Sort the top related mashups descending by cosine similarity score.
+        # Then pick the top k elements.
+        # Skip the first element because it's the query itself.
+        score_series = pd.Series(
+            self.mashup_cos_sim_matrix[query_index]
+        ).sort_values(ascending=False).iloc[1 : k+1]
 
-    # return query's index in mashups_df to be passed into recommendation function
-    query_index = mashups_df.shape[0] - 1
+        # Get all API id's used in top k related mashups
+        apis_in_top_k_mashups = []
+        for i in range(k):
+            # Retrieve a list of API id's from mashups_df
+            api_list = self.mashups_df.iloc[
+                score_series.index[i]
+            ]['api_list'].split(';')
+            api_list = [int(api) for api in api_list]
 
-    return query_index
+            apis_in_top_k_mashups.append(api_list)
 
-  # return APIs with top scores in the top k similar mashups of the query
-  def recommend_apis_from_mashups(self, query_index, k = 15):
-    # sort the top related mashups descending using cosine similarity score
-    # then pick the top k elements, skip the first mashup because it's the query itself
-    score_series = pd.Series(
-      self.mashup_cos_sim_matrix[query_index]
-    ).sort_values(ascending = False).iloc[1 : k + 1]
+        # Filter out repeated API id's in apis_in_top_k_mashups
+        all_apis = []
+        for api_list in apis_in_top_k_mashups:
+            for api in api_list:
+                if api not in all_apis:
+                    all_apis.append(api)
 
-    # get all API id's used in top k related mashups
-    apis_in_top_k_mashups = []
+        # For each API, if it is used in one of the top k related mashups,
+        # increment its count by 1.
+        count = {}
+        for api in all_apis:
+            count[api] = 0
+            for api_list in apis_in_top_k_mashups:
+                if api in api_list:
+                    count[api] += 1
 
-    for i in range(k):
-      # retrieve a list of API id's from mashups_df
-      api_list = self.mashups_df.iloc[score_series.index[i]]['api_list'].split(';')
-      api_list = [int(api) for api in api_list]
+        api_counts = []
+        for api in all_apis:
+            api_counts.append({
+                'id': api,
+                'count': count[api]
+            })
 
-      apis_in_top_k_mashups.append(api_list)
+        # Sort api_counts descending by count.
+        # Only recommend up to 10 APIs.
+        if (len(api_counts) < 10):
+            api_counts = sorted(
+                api_counts, reverse=True, key=lambda item: item['count']
+            )
+        else:
+            api_counts = sorted(
+                api_counts, reverse=True, key=lambda item: item['count']
+            )[: 10]
 
-    # filter out repeated API id's from apis_in_top_k_mashups
-    all_apis = []
+        # Return a dictionary to be displayed on web page
+        recommendations = []
 
-    for apis in apis_in_top_k_mashups:
-      for api in apis:
-        if api not in all_apis:
-          all_apis.append(api)
+        for api_count in api_counts:
+            # Retrieve corresponding row from apis_df
+            api_row = self.apis_df.iloc[api_count['id'] - 1].values
 
-    # for each API, if it is used in one of the top k related mashups, increment its count by 1
-    count = {}
+            recommendations.append({
+                'name': api_row[1],
+                'categories': api_row[2],
+                'description': api_row[3],
+                'url': api_row[4],
+                'count': api_count['count']
+            })
 
-    for api in all_apis:
-      count[api] = 0
-
-      for apis in apis_in_top_k_mashups:
-        if api in apis:
-          count[api] += 1
-
-    # each element in api_scores will be API's id and its count
-    api_scores = []
-
-    for api in all_apis:
-      api_scores.append({
-        'id': api,
-        'count': count[api]
-      })
-
-    # sort api_scores by count from highest to lowest
-    # only recommend up to 10 APIs
-    if (len(api_scores) < 10):
-      api_scores = sorted(api_scores, reverse = True, key = lambda x: x['count'])
-    else:
-      api_scores = sorted(api_scores, reverse = True, key = lambda x: x['count'])[ : 10]
-
-    # return a dictionary to be displayed on web page
-    recommendations = []
-
-    # for each element in api_scores
-    for api_score in api_scores:
-      # retrieve corresponding row from apis_df
-      api_row = self.apis_df.iloc[api_score['id'] - 1].values
-
-      recommendations.append({
-        'name': api_row[1],
-        'categories': api_row[2],
-        'description': api_row[3],
-        'url': api_row[4],
-        'count': api_score['count']
-      })
-
-    return recommendations
+        return recommendations
 
 
-# the server part
+# The server part
 
 from flask import Flask, render_template, request
 app = Flask(__name__)
 
-@app.route("/", methods = ["GET", "POST"])
+
+@app.route("/", methods=["GET", "POST"])
 def home():
-  if request.method == "POST":
-    max_df = float(request.values.get("max_df"))
-    max_features = int(request.values.get("max_features"))
+    if request.method == "POST":
+        max_df = float(request.values.get("max_df"))
+        max_features = int(request.values.get("max_features"))
 
-    if request.values.get("search") == "mashup":
-      recommender = APIRecommender()
+        if request.values.get("search") == "mashup":
+            recommender = APIRecommender()
 
-      query = request.values.get("query")
-      query_index = recommender.add_query(query, max_df, max_features)
+            query = request.values.get("query")
+            query_index = recommender.add_query(query, max_df, max_features)
 
-      apis = recommender.recommend_apis_from_mashups(query_index)
-      return render_template("index.html", apis = apis, search = "mashup")
+            apis = recommender.recommend_apis_from_mashups(query_index)
+            return render_template("index.html", apis=apis, search="mashup")
 
-  return render_template("index.html")
+    return render_template("index.html")
 
 
 if __name__ == "__main__":
-  print("Starting server...")
-  app.run(debug = True)
+    print("Starting server...")
+    app.run(debug=True)
