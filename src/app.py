@@ -27,15 +27,12 @@ class APIRecommender:
     def process_text(self, text):
         # Create a text filter list of English stopwords and special characters
         text_filter = [stopwords.words('english')]
-        special_characters = [',', '/', '-', '.', ';']
-        for char in special_characters:
-            text_filter.append(char)
+        text_filter.extend([',', '/', '-', '.', ';'])
 
         # Initialize text stemmer
         porter = PorterStemmer()
 
-        # String to be returned
-        result = ''
+        processed_text = ''
 
         # Tokenize text
         tokens = word_tokenize(str(text))
@@ -43,10 +40,10 @@ class APIRecommender:
             # Remove English stopwords and special characters from each token
             if token not in text_filter:
                 # Stem each token
-                result += porter.stem(token.lower())
-                result += ' '
+                processed_text += porter.stem(token.lower())
+                processed_text += ' '
 
-        return result
+        return processed_text
 
     def add_query(self, query, max_df=0.85, max_features=5000):
         # Add a new row for the query to the end of the dataframe.
@@ -89,28 +86,27 @@ class APIRecommender:
         # Get all API id's used in top k related mashups
         apis_in_top_k_mashups = []
         for i in range(k):
-            # Retrieve a list of API id's from mashups_df
-            api_list = self.mashups_df.iloc[
-                score_series.index[i]
-            ]['api_list'].split(';')
-            api_list = [int(api) for api in api_list]
+            # Retrieve a list of API id's from mashups_df,
+            # and convert it to a set
+            api_set = set(
+                self.mashups_df.iloc[score_series.index[i]]['api_list'].split(';')
+            )
+            api_set = {int(api) for api in api_set}
 
-            apis_in_top_k_mashups.append(api_list)
+            apis_in_top_k_mashups.append(api_set)
 
         # Filter out repeated API id's in apis_in_top_k_mashups
-        all_apis = []
-        for api_list in apis_in_top_k_mashups:
-            for api in api_list:
-                if api not in all_apis:
-                    all_apis.append(api)
+        all_apis = set()
+        for api_set in apis_in_top_k_mashups:
+            all_apis = all_apis | api_set
 
         # For each API, if it is used in one of the top k related mashups,
         # increment its count by 1.
         count = {}
         for api in all_apis:
             count[api] = 0
-            for api_list in apis_in_top_k_mashups:
-                if api in api_list:
+            for api_set in apis_in_top_k_mashups:
+                if api in api_set:
                     count[api] += 1
 
         api_counts = []
@@ -161,18 +157,16 @@ def home():
         max_df = float(request.values.get("max_df"))
         max_features = int(request.values.get("max_features"))
 
-        if request.values.get("search") == "mashup":
-            recommender = APIRecommender()
+        query = request.values.get("query")
+        query_index = recommender.add_query(query, max_df, max_features)
 
-            query = request.values.get("query")
-            query_index = recommender.add_query(query, max_df, max_features)
-
-            apis = recommender.recommend_apis_from_mashups(query_index)
-            return render_template("index.html", apis=apis, search="mashup")
+        apis = recommender.recommend_apis_from_mashups(query_index)
+        return render_template("index.html", apis=apis, search="mashup")
 
     return render_template("index.html")
 
 
 if __name__ == "__main__":
+    recommender = APIRecommender()
     print("Starting server...")
     app.run(debug=True)
