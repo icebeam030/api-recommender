@@ -22,7 +22,7 @@ class APIRecommender:
         self.mashups_df = pd.read_csv('../datasets/mashups_processed.csv')
 
         # Updated when query is updated, used by recommendation function
-        self.mashup_cos_sim_matrix = []
+        self.mashup_cos_sim_vector = []
 
     def process_text(self, text):
         # Create a text filter list of English stopwords and special characters
@@ -62,26 +62,25 @@ class APIRecommender:
             mashups_df['description_words']
         ).toarray()
 
-        # Calculate cosine similarity matrix
-        self.mashup_cos_sim_matrix = cosine_similarity(
-            mashup_description_matrix,
-            mashup_description_matrix
-        )
+        # Calculate cosine similarity vector
+        self.mashup_cos_sim_vector = []
 
-        # Return query's index to be passed into recommendation function
         query_index = mashups_df.shape[0] - 1
+        for i in range(query_index):
+            cos_sim_score = cosine_similarity(
+                [mashup_description_matrix[i]],
+                [mashup_description_matrix[query_index]]
+            )
+            self.mashup_cos_sim_vector.append(cos_sim_score)
 
-        return query_index
-
-    def recommend_apis_from_mashups(self, query_index, k=15):
+    def recommend_apis_from_mashups(self, k=15):
         """Return APIs with top counts in top k similar mashups to the query"""
 
         # Sort the top related mashups descending by cosine similarity score.
         # Then pick the top k elements.
-        # Skip the first element because it's the query itself.
         score_series = pd.Series(
-            self.mashup_cos_sim_matrix[query_index]
-        ).sort_values(ascending=False).iloc[1 : k+1]
+            self.mashup_cos_sim_vector
+        ).sort_values(ascending=False).iloc[0 : k]
 
         # Get all API id's used in top k related mashups
         apis_in_top_k_mashups = []
@@ -158,9 +157,9 @@ def home():
         max_features = int(request.values.get("max_features"))
 
         query = request.values.get("query")
-        query_index = recommender.add_query(query, max_df, max_features)
+        recommender.add_query(query, max_df, max_features)
 
-        apis = recommender.recommend_apis_from_mashups(query_index)
+        apis = recommender.recommend_apis_from_mashups()
         return render_template("index.html", apis=apis, search="mashup")
 
     return render_template("index.html")
