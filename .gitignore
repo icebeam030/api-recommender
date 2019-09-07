@@ -1,7 +1,7 @@
-# vs code setings
+# VS Code setings
 .vscode
 
-# jupyter notebook related
+# Jupyter notebook related
 src/debug.log
 src/.ipynb_checkpoints
 
